@@ -4,6 +4,7 @@
 
 //struct mg_connection* pl1 = NULL; // player1
 
+
 // H A N D L E R S
 
 // Messages from server:
@@ -21,7 +22,7 @@
 
 // E V E N T S
 
-void ev_handle_http(struct mg_connection* c, void* ev_data) {
+void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_http_message* hm = (struct mg_http_message*)ev_data;
 	if (mg_strcmp(hm->uri, mg_str("/ws")) == 0) {
 		mg_ws_upgrade(c, hm, NULL);
@@ -29,17 +30,16 @@ void ev_handle_http(struct mg_connection* c, void* ev_data) {
 		printf("WS: New conn\n");
 		return;
 	}
-	if (strcmp(hm->method.buf, ))
+	if (!strncmp(hm->method.buf, "GET", 3)) {
 		struct mg_http_serve_opts opts = { .root_dir = "./web" };
 		mg_http_serve_dir(c, hm, &opts);
-		printf("HTTP: New reqest\n");
 	}
 }
 
 void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	switch (ev) {
 		case MG_EV_HTTP_MSG:
-			ev_handle_http(c, ev_data);
+			ev_handle_http_msg(c, ev_data);
 			break;
 		case MG_EV_WS_MSG:
 			struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
