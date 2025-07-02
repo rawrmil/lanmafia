@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Mafia</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		@font-face {
+			font-family: Quicksand;
+			src: url(quicksand.ttf);
+		}
+		:root {
+			--col-bg: #131430;
+			--col-cell: #333460;
+			--col-text: #eeeeef;
+			--col-x: #ef2010;
+			--col-o: #eeeeef;
+		}
+		body {
+			background: var(--col-bg);
+			display: grid;
+			place-items: center;
+			height: 100vh;
+			margin: 0;
+			font-family: Quicksand, sans-serif;
+		}
+		#container {
+			display: flex;
+			justify-content: center;
+			align-items: vertical;
+			flex-direction: column;
+			place-items: center;
+		}
+		#info {
+			margin-bottom: 20px;
+			color: var(--col-text);
+			font-size: 24px;
+			font-weight: bold;
+			text-shadow: 1px 1px 0px var(--col-cell);
+		}
+		.no-select {
+			user-select: none;
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div id="info">
+			<p>Hello</p>
+			<p><i><span id=""></span></i></p>
+		</div>
+	</div>
+	<script>
+		// E L E M E N T S
+		// ...
+		// W E B S O C K E T S
+		const ws = new WebSocket(`ws://${location.host}/ws`);
+		ws.onopen = () => { console.log('WS: open'); };
+		ws.onmessage = (event) => {
+    //};
+	</script>
+</body>
+</html>
