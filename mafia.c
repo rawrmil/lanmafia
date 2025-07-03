@@ -1,25 +1,5 @@
 #include "mongoose.h"
 
-// V A R I A B L E S
-
-//struct mg_connection* pl1 = NULL; // player1
-
-
-// H A N D L E R S
-
-// Messages from server:
-// ...
-
-//void send_all(struct mg_mgr *mgr, char* buf, size_t len) {
-//	printf("Sending all: '%.*s'\n", len, buf);
-//	struct mg_connection *c;
-//	for (c = mgr->conns; c != NULL; c = c->next) {
-//		if (c->is_websocket) {
-//			mg_ws_send(c, buf, len, WEBSOCKET_OP_TEXT);
-//		}
-//	}
-//}
-
 // E V E N T S
 
 void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
@@ -36,14 +16,19 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
+void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
+		// Testing: ws.send("something");
+		struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
+		printf("%s\n", wm->data.buf);
+}
+
 void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	switch (ev) {
 		case MG_EV_HTTP_MSG:
 			ev_handle_http_msg(c, ev_data);
 			break;
 		case MG_EV_WS_MSG:
-			struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-			// TODO: WS message
+			ev_handle_mg_msg(c, ev_data);
 			break;
 		case MG_EV_CLOSE:
 			// TODO: Player disconnect
