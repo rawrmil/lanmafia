@@ -22,6 +22,11 @@ void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
 		printf("%s\n", wm->data.buf);
 }
 
+void ev_handle_mg_close(c, ev_data) {
+		//struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
+		//disconnect
+}
+
 void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	switch (ev) {
 		case MG_EV_HTTP_MSG:
@@ -31,7 +36,7 @@ void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 			ev_handle_mg_msg(c, ev_data);
 			break;
 		case MG_EV_CLOSE:
-			// TODO: Player disconnect
+			ev_handle_mg_close(c, ev_data);
 			break;
 	}
 }
