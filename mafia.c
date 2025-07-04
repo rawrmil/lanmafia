@@ -2,6 +2,17 @@
 
 // E V E N T S
 
+/*
+Room connection:
+Connecting:
+	Req: 'rn<name>' - connect to the room with name
+	- Check name<=32 bytes till '\0'
+  - Check if not already connected
+	Res: 'rs' - connection successeful
+On new connection:
+All: 'rl\x1f<name>\x1f<name>...'
+*/
+
 void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_http_message* hm = (struct mg_http_message*)ev_data;
 	if (mg_strcmp(hm->uri, mg_str("/ws")) == 0) {
