@@ -1,3 +1,3 @@
 #!/bin/sh
 
-ls -d * | entr sh -c 'make && ./mafia'
+watchexec -r -e c -- make && ./mafia
