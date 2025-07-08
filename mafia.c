@@ -4,20 +4,24 @@
 
 // EV: Room connections
 /*
- * Room connection:
- * Connecting:
- *   REQ: 'rc<name>' - connect to the room with name
- *   - Check name<=32 bytes till '\0'
- *   - Check if not already connected
- *   RES: 'rs' - connection successeful
- *   RES: 're<error_id>' - connection unsuccesseful
- *   Error ID:
- *   - 'e' - empty command
- *   - 'E' - empty name
- *   - 'l' - name too long
- * On new connection:
- *   ALL: 'rl<name>\x1f<name>...'
- */
+WebSockets:
+- Client message - U
+- Server message - S
+- Message format: 'action/subaction\ndata'
+Room connection:
+- Connecting:
+-- U: 'room/conn/open<name>' - connect to the room with name
+--- Check name<=32 bytes till '\0'
+--- Check if not already connected
+--- Renew the list and send to players
+-- S: 'room/conn/ok' - connection successeful
+-- S: 'room/conn/err' - connection unsuccesseful
+---- Error ID:
+----- 'data-empty' - empty command
+----- 'name-empty' - empty name
+----- 'name-long' - name too long
+----- 'name-invalid' - name invalid
+*/
 
 void ev_user_room_conn(struct mg_connection* c, char* msg) {
 	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
