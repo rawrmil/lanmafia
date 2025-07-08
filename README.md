@@ -4,3 +4,10 @@
 make
 #./mafia
 ```
+
+## Dependencies
+```
+libmongoose
+libjansson
+libunistring
+```
