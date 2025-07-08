@@ -1,4 +1,5 @@
 #include "mongoose.h"
+#include "jansson.h"
 
 // E V E N T S
 
@@ -7,19 +8,19 @@
 WebSockets:
 - Client message - U
 - Server message - S
-- Message format: 'action/subaction\ndata'
+- Message format: JSON ("type and other data fields)
 Room connection:
 - Connecting:
--- U: 'room/conn/open<name>' - connect to the room with name
+-- U: room/conn/open: name - connect to the room with name
 --- Check name<=32 bytes till '\0'
 --- Check if not already connected
 --- Renew the list and send to players
--- S: 'room/conn/ok' - connection successeful
--- S: 'room/conn/err' - connection unsuccesseful
+-- S: room/conn/ok - connection successeful
+-- S: room/conn/err: error_id - connection unsuccesseful
 ---- Error ID:
------ 'name-empty' - empty name
------ 'name-long' - name too long
------ 'name-invalid' - name contains invalid chars
+----- name-empty - empty name
+----- name-long - name too long
+----- name-invalid - name contains invalid chars
 */
 
 // EV: High level handlers
@@ -37,17 +38,15 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
-#define EV_WS_ENTRY(msg, ent) \
-	(!strncmp(msg, ent, sizeof(ent)-1) ? wm->data.buf+sizeof(ent) : NULL)
-
 void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
 	// Testing: ws.send("something");
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-	char* data = NULL;
-	if (data = EV_WS_ENTRY(wm->data.buf, "room/conn/open")) {
-		printf("Connection name: %s\n", data);
-		mg_ws_send(c, wm->data.buf, strlen(wm->data.buf), WEBSOCKET_OP_TEXT);
-	}
+	printf("'wm->data.buf': '%s'\n", wm->data.buf);
+	//char* data = NULL;
+	//if (data = EV_WS_ENTRY(wm->data.buf, "room/conn/open")) {
+	//	printf("Connection name: %s\n", data);
+	//	mg_ws_send(c, wm->data.buf, strlen(wm->data.buf), WEBSOCKET_OP_TEXT);
+	//}
 }
 
 void ev_handle_mg_close(struct mg_connection* c, void* ev_data) {
