@@ -42,11 +42,19 @@ void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
 	// Testing: ws.send("something");
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 	printf("'wm->data.buf': '%s'\n", wm->data.buf);
-	//char* data = NULL;
-	//if (data = EV_WS_ENTRY(wm->data.buf, "room/conn/open")) {
-	//	printf("Connection name: %s\n", data);
-	//	mg_ws_send(c, wm->data.buf, strlen(wm->data.buf), WEBSOCKET_OP_TEXT);
-	//}
+	json_error_t* err;
+	json_t* msg = json_loads(wm->data.buf, 0, err);
+	if (!msg) {
+		printf("ERR: WS message parsing\n");
+		return;
+	}
+	json_t* type_json = json_object_get(msg, "type");
+	if (!json_is_string(type_json)) {
+		printf("ERR: No 'type' field in WS message\n");
+		return;
+	}
+	printf("type: %s\n", json_string_value(type_json));
+	json_decref(msg);
 }
 
 void ev_handle_mg_close(struct mg_connection* c, void* ev_data) {
