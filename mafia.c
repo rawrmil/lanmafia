@@ -17,15 +17,10 @@ Room connection:
 -- S: 'room/conn/ok' - connection successeful
 -- S: 'room/conn/err' - connection unsuccesseful
 ---- Error ID:
------ 'data-empty' - empty command
 ----- 'name-empty' - empty name
 ----- 'name-long' - name too long
------ 'name-invalid' - name invalid
+----- 'name-invalid' - name contains invalid chars
 */
-
-void ev_user_room_conn(struct mg_connection* c, char* msg) {
-	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
-}
 
 // EV: High level handlers
 
@@ -42,19 +37,17 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
+#define EV_WS_ENTRY(msg, ent) \
+	(!strncmp(msg, ent, sizeof(ent)-1) ? wm->data.buf+sizeof(ent) : NULL)
+
 void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
 	// Testing: ws.send("something");
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-	if (wm->data.len < 2) {
-		// TODO: Empty msg error
-		return;
+	char* data = NULL;
+	if (data = EV_WS_ENTRY(wm->data.buf, "room/conn/open")) {
+		printf("Connection name: %s\n", data);
+		mg_ws_send(c, wm->data.buf, strlen(wm->data.buf), WEBSOCKET_OP_TEXT);
 	}
-	switch (wm->data.buf[0]) {
-		case 'r':
-			ev_user_room_conn(c, &wm->data.buf[1]);
-			break;
-	}
-	printf("%s\n", wm->data.buf);
 }
 
 void ev_handle_mg_close(struct mg_connection* c, void* ev_data) {
