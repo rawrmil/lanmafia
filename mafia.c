@@ -11,19 +11,19 @@ WebSockets:
 - Message format: JSON ("type and other data fields)
 Room connection:
 - Connecting:
--- U: room/conn/open: name - connect to the room with name
+-- ws.send('{"type": "room/conn/open", "name": "Coolguy1337"}')
 --- Check name<=32 bytes till '\0'
 --- Check if not already connected
 --- Renew the list and send to players
--- S: room/conn/ok - connection successeful
--- S: room/conn/err: error_id - connection unsuccesseful
----- Error ID:
------ name-empty - empty name
------ name-long - name too long
------ name-invalid - name contains invalid chars
+-- S: '{ "type": "room/conn/ok" }' - connection successeful
+-- S: '{ "type": "room/conn/err", "error_id": "..." }'
+---- "error_id":
+----- "name-empty" - empty name
+----- "name-long" - name too long
+----- "name-invalid" - name contains invalid chars
 */
 
-// EV: High level handlers
+// EV: Low level handlers
 
 void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_http_message* hm = (struct mg_http_message*)ev_data;
@@ -38,7 +38,7 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
-void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
+void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	// Testing: ws.send("something");
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 	printf("'wm->data.buf': '%s'\n", wm->data.buf);
@@ -57,7 +57,7 @@ void ev_handle_mg_msg(struct mg_connection* c, void* ev_data) {
 	json_decref(msg);
 }
 
-void ev_handle_mg_close(struct mg_connection* c, void* ev_data) {
+void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
 	//struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 	//disconnect
 }
@@ -68,10 +68,10 @@ void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 			ev_handle_http_msg(c, ev_data);
 			break;
 		case MG_EV_WS_MSG:
-			ev_handle_mg_msg(c, ev_data);
+			ev_handle_ws_msg(c, ev_data);
 			break;
 		case MG_EV_CLOSE:
-			ev_handle_mg_close(c, ev_data);
+			ev_handle_ws_close(c, ev_data);
 			break;
 	}
 }
