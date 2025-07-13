@@ -8,6 +8,5 @@ make
 ## Dependencies
 ```
 libmongoose
-libjansson
 libunistring
 ```

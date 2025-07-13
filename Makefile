@@ -1,3 +1,3 @@
 all:
-	gcc mafia.c mongoose.c -o mafia -ljansson
+	gcc mafia.c mongoose.c -o mafia
 	./mafia
