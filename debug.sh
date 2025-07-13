@@ -1,3 +1,3 @@
 #!/bin/sh
 
-ls *.c | entr -r make && ./mafia
+ls *.c Makefile | entr -r make && ./mafia
