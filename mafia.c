@@ -12,11 +12,12 @@ WebSockets:
 - CONNECTING/DISCONNECTING:
 -- U: 'rc_user_open|<name>' - open connection with name
 -- S: 'rc_serv_open_ok ] - connection successeful (send data to all players)
--- S: [ rc_serv_open_err<error_id> ] - connection unsuccesseful
+-- S: 'rc_serv_open_err<error_id>' - connection unsuccesseful
 --- rcerr_serv_name_length - name length > 32
 --- rcerr_serv_name_forbidden - forbidden symbols
 --- rcerr_serv_name_exists - name exists
--- U: [ RC_USER_CLOSE ] - close connection
+-- U: 'rc_user_close' - close connection
+-- U: 'm|<data>' - send message directly to the game engine
 */
 
 // EV: Low level handlers
