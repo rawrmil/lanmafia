@@ -35,9 +35,31 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
+#define RC_PREFIX_CASE(_pre, _dat, _c, _handler) \
+	{ \
+		if (sizeof(_pre)-1 <= _dat.len && strncmp(_dat.buf, _pre, sizeof(_pre)-1) == 0) { \
+			struct mg_str data; \
+			if (sizeof(_pre)-1 == _dat.len) \
+				_handler(_c, (struct mg_str) { .buf = NULL, .len = 0 }); \
+			else \
+				_handler(_c, (struct mg_str) { .buf = _dat.buf+sizeof(_pre), .len = _dat.len-sizeof(_pre) }); \
+			return; \
+		} \
+	}
+
+void test1(struct mg_connection* c, struct mg_str data) {
+	printf("test1: '%.*s'\n", data.len, data.buf);
+}
+
+void test2(struct mg_connection* c, struct mg_str data) {
+	printf("test2: '%.*s'\n", data.len, data.buf);
+}
+
 void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 	printf("'wm->data.buf': '%s'\n", wm->data.buf);
+	RC_PREFIX_CASE("test1", wm->data, c, test1)
+	RC_PREFIX_CASE("test2", wm->data, c, test2)
 }
 
 void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
