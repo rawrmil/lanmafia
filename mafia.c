@@ -8,19 +8,15 @@
 WebSockets:
 - Client message - U
 - Server message - S
-- Message format: JSON ("type and other data fields)
-Room connection:
-- Connecting:
--- ws.send('{"type": "room/conn/open", "name": "Coolguy1337"}')
---- Check name<=32 bytes till '\0'
---- Check if not already connected
---- Renew the list and send to players
--- S: '{ "type": "room/conn/ok" }' - connection successeful
--- S: '{ "type": "room/conn/err", "error_id": "..." }'
----- "error_id":
------ "name-empty" - empty name
------ "name-long" - name too long
------ "name-invalid" - name contains invalid chars
+- U/S: '<type>|<data>'
+- CONNECTING/DISCONNECTING:
+-- U: 'rc_user_open|<name>' - open connection with name
+-- S: 'rc_serv_open_ok ] - connection successeful (send data to all players)
+-- S: [ rc_serv_open_err<error_id> ] - connection unsuccesseful
+--- rcerr_serv_name_length - name length > 32
+--- rcerr_serv_name_forbidden - forbidden symbols
+--- rcerr_serv_name_exists - name exists
+-- U: [ RC_USER_CLOSE ] - close connection
 */
 
 // EV: Low level handlers
