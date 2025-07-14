@@ -1,4 +1,5 @@
 #include "mongoose.h"
+#include <unistr.h>
 
 // E V E N T S
 
@@ -14,11 +15,22 @@ WebSockets:
 -- S: 'rc_serv_open_err|<error_id>' - connection unsuccesseful
 -- <error_id>:
 --- 'name_length' - name length > 32
---- 'name_forbidden' - forbidden symbols
 --- 'name_exists' - name exists
 -- U: 'rc_user_close' - close connection
--- U: 'm|<data>' - send message directly to the game engine
+-- U: '!|<data>' - send message directly to the game engine
 */
+
+// Room connections
+
+struct rc_conn {
+	struct mg_str name;
+	struct mg_connection* c;
+	struct room_conn* next;
+};
+
+struct rc_mgr {
+	struct rc_conn* conns;
+} rcmgr;
 
 // EV: Low level handlers
 
@@ -35,31 +47,32 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
-#define RC_PREFIX_CASE(_pre, _dat, _c, _handler) \
+void rc_user_open(struct mg_connection* c, struct mg_str data) {
+	printf("rc_user_open: %.*s\n", data.len, data.buf);
+	if (data.len > 128 || u8_strlen(data.buf) > 32) {
+		char errmsg[] = "rc_serv_open_err|name_length";
+		mg_ws_send(c, errmsg, sizeof(errmsg)-1, WEBSOCKET_OP_TEXT);
+	}
+	// TODO: Name exists
+	
+}
+
+#define RC_PREFIX_CASE(_pre, _handler) \
 	{ \
-		if (sizeof(_pre)-1 <= _dat.len && strncmp(_dat.buf, _pre, sizeof(_pre)-1) == 0) { \
-			struct mg_str data; \
-			if (sizeof(_pre)-1 == _dat.len) \
-				_handler(_c, (struct mg_str) { .buf = NULL, .len = 0 }); \
+		if (sizeof(_pre)-1 <= wm->data.len && strncmp(wm->data.buf, _pre, sizeof(_pre)-1) == 0) { \
+			if (sizeof(_pre)-1 == wm->data.len) \
+				_handler(c, (struct mg_str) { .buf = NULL, .len = 0 }); \
 			else \
-				_handler(_c, (struct mg_str) { .buf = _dat.buf+sizeof(_pre), .len = _dat.len-sizeof(_pre) }); \
+				_handler(c, (struct mg_str) { .buf = wm->data.buf+sizeof(_pre), .len = wm->data.len-sizeof(_pre) }); \
 			return; \
 		} \
 	}
 
-void test1(struct mg_connection* c, struct mg_str data) {
-	printf("test1: '%.*s'\n", data.len, data.buf);
-}
-
-void test2(struct mg_connection* c, struct mg_str data) {
-	printf("test2: '%.*s'\n", data.len, data.buf);
-}
-
 void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 	printf("'wm->data.buf': '%s'\n", wm->data.buf);
-	RC_PREFIX_CASE("test1", wm->data, c, test1)
-	RC_PREFIX_CASE("test2", wm->data, c, test2)
+	RC_PREFIX_CASE("rc_user_open", rc_user_open)
+	//RC_PREFIX_CASE("test2", test2)
 }
 
 void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
@@ -68,6 +81,7 @@ void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
 }
 
 void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
+
 	switch (ev) {
 		case MG_EV_HTTP_MSG:
 			ev_handle_http_msg(c, ev_data);
