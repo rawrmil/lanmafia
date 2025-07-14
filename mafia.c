@@ -25,7 +25,7 @@ WebSockets:
 struct rc_conn {
 	struct mg_str name;
 	struct mg_connection* c;
-	struct room_conn* next;
+	struct rc_conn* next;
 };
 
 struct rc_mgr {
@@ -47,15 +47,40 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
+void rc_send_all(struct mg_str data) {
+	//struct rc_conn* rcc = rcmgr.conns;
+	//while (c != NULL) {
+	//	printf("Connection: %s\n", rcc->name);
+	//	rcc = rcc->next;
+	//}
+}
+
+#define WS_SEND_CONST(c_, arr_) mg_ws_send(c_, arr_, sizeof(arr_)-1, WEBSOCKET_OP_TEXT);
+
 void rc_user_open(struct mg_connection* c, struct mg_str data) {
-	printf("rc_user_open: %.*s\n", data.len, data.buf);
 	if (data.len > 128 || u8_strlen(data.buf) > 32) {
-		char errmsg[] = "rc_serv_open_err|name_length";
-		mg_ws_send(c, errmsg, sizeof(errmsg)-1, WEBSOCKET_OP_TEXT);
+		WS_SEND_CONST(c, "rc_serv_open_err|name_length");
+		return;
 	}
 	// TODO: Name exists
-	
+	struct rc_conn* rcc = calloc(1, sizeof(*rcc));
+	assert(rcc);
+	rcc->name.buf = calloc(data.len, sizeof(char));
+	assert(rcc->name.buf);
+	rcc->name.len = data.len;
+	strncpy(rcc->name.buf, data.buf, data.len);
+	rcc->c = c;
+	rcc->next = NULL;
+	if (rcmgr.conns == NULL) {
+		rcmgr.conns = rcc;
+	} else {
+		LIST_ADD_HEAD(struct rc_conn, &rcmgr.conns, rcc);
+	}
+	// TODO: free stuff
+	WS_SEND_CONST(c, "rc_serv_open_ok");
 }
+
+/// TODO: rc_user_close
 
 #define RC_PREFIX_CASE(_pre, _handler) \
 	{ \
