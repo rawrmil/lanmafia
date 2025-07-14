@@ -21,8 +21,6 @@ WebSockets:
 -- U: '!|<data>' - send message directly to the game engine
 */
 
-// Room connections
-
 struct rc_conn {
 	struct mg_str name;
 	struct mg_connection* c;
@@ -32,21 +30,6 @@ struct rc_conn {
 struct rc_mgr {
 	struct rc_conn* conns;
 } rcmgr;
-
-// EV: Low level handlers
-
-void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
-	struct mg_http_message* hm = (struct mg_http_message*)ev_data;
-	if (mg_strcmp(hm->uri, mg_str("/ws")) == 0) {
-		mg_ws_upgrade(c, hm, NULL);
-		printf("WS: New conn\n");
-		return;
-	}
-	if (!strncmp(hm->method.buf, "GET", 3)) {
-		struct mg_http_serve_opts opts = { .root_dir = "./web" };
-		mg_http_serve_dir(c, hm, &opts);
-	}
-}
 
 void rc_send_all(char* buf, int len) {
 	struct rc_conn* rcc = rcmgr.conns;
@@ -94,7 +77,36 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 	WS_SEND_CONST(c, "rc_serv_open_ok");
 }
 
-/// TODO: rc_user_close
+void rc_user_close(struct mg_connection* c, struct mg_str data) {
+	struct rc_conn** rccp = &rcmgr.conns;
+	while (*rccp != NULL) {
+		if (c == (*rccp)->c) {
+			free((*rccp)->name.buf);
+			free((*rccp));
+			*rccp = (*rccp)->next;
+			break;
+		}
+		rccp = &(*rccp)->next;
+	}
+}
+
+// Game functions
+
+// EV: Low level handlers
+
+void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
+	struct mg_http_message* hm = (struct mg_http_message*)ev_data;
+	if (mg_strcmp(hm->uri, mg_str("/ws")) == 0) {
+		mg_ws_upgrade(c, hm, NULL);
+		printf("WS: New conn\n");
+		return;
+	}
+	if (!strncmp(hm->method.buf, "GET", 3)) {
+		struct mg_http_serve_opts opts = { .root_dir = "./web" };
+		mg_http_serve_dir(c, hm, &opts);
+	}
+}
+
 
 #define RC_PREFIX_CASE(_pre, _handler) \
 	{ \
@@ -110,7 +122,8 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 	printf("'wm->data.buf': '%s'\n", wm->data.buf);
-	RC_PREFIX_CASE("rc_user_open", rc_user_open)
+	RC_PREFIX_CASE("rc_user_open", rc_user_open);
+	RC_PREFIX_CASE("rc_user_close", rc_user_close);
 	//RC_PREFIX_CASE("test2", test2)
 }
 
