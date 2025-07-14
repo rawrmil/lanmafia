@@ -16,6 +16,7 @@ WebSockets:
 -- <error_id>:
 --- 'name_length' - name length > 32
 --- 'name_exists' - name exists
+--- 'conn_exists' - connection exists
 -- U: 'rc_user_close' - close connection
 -- U: '!|<data>' - send message directly to the game engine
 */
@@ -47,10 +48,10 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
-void rc_send_all(struct mg_str data) {
+void rc_send_all(char* buf, int len) {
 	//struct rc_conn* rcc = rcmgr.conns;
-	//while (c != NULL) {
-	//	printf("Connection: %s\n", rcc->name);
+	//while (rcc != NULL) {
+	//	printf("C: %s\n", rcc->name);
 	//	rcc = rcc->next;
 	//}
 }
@@ -62,8 +63,20 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		WS_SEND_CONST(c, "rc_serv_open_err|name_length");
 		return;
 	}
-	// TODO: Name exists
-	struct rc_conn* rcc = calloc(1, sizeof(*rcc));
+	// Name/connection duplication check
+	struct rc_conn* rcc = rcmgr.conns;
+	while (rcc != NULL) {
+		if (mg_strcmp(data, rcc->name) == 0) {
+			WS_SEND_CONST(c, "rc_serv_open_err|name_exists");
+			return;
+		}
+		if (c == rcc->c) {
+			WS_SEND_CONST(c, "rc_serv_open_err|conn_exists");
+			return;
+		}
+		rcc = rcc->next;
+	}
+	rcc = calloc(1, sizeof(*rcc));
 	assert(rcc);
 	rcc->name.buf = calloc(data.len, sizeof(char));
 	assert(rcc->name.buf);
@@ -77,6 +90,7 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		LIST_ADD_HEAD(struct rc_conn, &rcmgr.conns, rcc);
 	}
 	// TODO: free stuff
+	rc_send_all("123", 3);
 	WS_SEND_CONST(c, "rc_serv_open_ok");
 }
 
