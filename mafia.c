@@ -49,11 +49,11 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 }
 
 void rc_send_all(char* buf, int len) {
-	//struct rc_conn* rcc = rcmgr.conns;
-	//while (rcc != NULL) {
-	//	printf("C: %s\n", rcc->name);
-	//	rcc = rcc->next;
-	//}
+	struct rc_conn* rcc = rcmgr.conns;
+	while (rcc != NULL) {
+		mg_ws_send(rcc->c, buf, len, WEBSOCKET_OP_TEXT);
+		rcc = rcc->next;
+	}
 }
 
 #define WS_SEND_CONST(c_, arr_) mg_ws_send(c_, arr_, sizeof(arr_)-1, WEBSOCKET_OP_TEXT);
