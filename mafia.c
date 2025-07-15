@@ -1,5 +1,6 @@
 #include "mongoose.h"
 #include "unistr.h"
+#include "sds.h"
 
 // E V E N T S
 
@@ -46,6 +47,10 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		WS_SEND_CONST(c, "rc_serv_open_err|name_length");
 		return;
 	}
+	if (u8_strstr(data.buf, ",") != NULL) {
+		WS_SEND_CONST(c, "rc_serv_open_err|name_forbidden");
+		return;
+	}
 	// Name/connection duplication check
 	struct rc_conn* rcc = rcmgr.conns;
 	while (rcc != NULL) {
@@ -73,7 +78,15 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		LIST_ADD_HEAD(struct rc_conn, &rcmgr.conns, rcc);
 	}
 	// TODO: free stuff
-	rc_send_all("123", 3);
+	sds usrstr = sdsnew("rc_serv_users|");
+	while (rcc != NULL) {
+		usrstr = sdscat(usrstr, rcc->name.buf);
+		rcc = rcc->next;
+		if (rcc != NULL)
+			usrstr = sdscat(usrstr, ",");
+	}
+	rc_send_all(usrstr, sdslen(usrstr));
+	sdsfree(usrstr);
 	WS_SEND_CONST(c, "rc_serv_open_ok");
 }
 
@@ -84,6 +97,7 @@ void rc_user_close(struct mg_connection* c, struct mg_str data) {
 			free((*rccp)->name.buf);
 			free((*rccp));
 			*rccp = (*rccp)->next;
+			WS_SEND_CONST(c, "rc_serv_close_ok");
 			break;
 		}
 		rccp = &(*rccp)->next;
