@@ -43,6 +43,16 @@ void rc_send_all(char* buf, int len) {
 #define WS_SEND_CONST(c_, arr_) mg_ws_send(c_, arr_, sizeof(arr_)-1, WEBSOCKET_OP_TEXT);
 
 void rc_user_open(struct mg_connection* c, struct mg_str data) {
+	// Connection check
+	struct rc_conn* rcc = rcmgr.conns;
+	while (rcc != NULL) {
+		if (c == rcc->c) {
+			WS_SEND_CONST(c, "rc_serv_open_err|conn_exists");
+			return;
+		}
+		rcc = rcc->next;
+	}
+	// Check name
 	if (data.len > 128 || u8_strlen(data.buf) > 32) {
 		WS_SEND_CONST(c, "rc_serv_open_err|name_length");
 		return;
@@ -52,18 +62,19 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		return;
 	}
 	// Name/connection duplication check
-	struct rc_conn* rcc = rcmgr.conns;
+	rcc = rcmgr.conns;
 	while (rcc != NULL) {
-		if (mg_strcmp(data, rcc->name) == 0) {
-			WS_SEND_CONST(c, "rc_serv_open_err|name_exists");
-			return;
-		}
 		if (c == rcc->c) {
 			WS_SEND_CONST(c, "rc_serv_open_err|conn_exists");
 			return;
 		}
+		if (mg_strcmp(data, rcc->name) == 0) {
+			WS_SEND_CONST(c, "rc_serv_open_err|name_exists");
+			return;
+		}
 		rcc = rcc->next;
 	}
+	// Add to the list
 	rcc = calloc(1, sizeof(*rcc));
 	assert(rcc);
 	rcc->name.buf = calloc(data.len, sizeof(char));
@@ -135,7 +146,6 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 
 void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-	printf("'wm->data.buf': '%s'\n", wm->data.buf);
 	RC_PREFIX_CASE("rc_user_open", rc_user_open);
 	RC_PREFIX_CASE("rc_user_close", rc_user_close);
 	//RC_PREFIX_CASE("test2", test2)
