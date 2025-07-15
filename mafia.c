@@ -14,6 +14,7 @@ WebSockets:
 -- U: 'rc_user_open|<name>' - open connection with name
 -- S: 'rc_serv_open_ok' - connection successeful (send data to all players)
 -- S: 'rc_serv_open_err|<error_id>' - connection unsuccesseful
+-- S: 'rc_serv_close_ok' - disconnection successeful
 -- <error_id>:
 --- 'name_length' - name length > 32
 --- 'name_exists' - name exists
@@ -30,10 +31,11 @@ struct rc_conn {
 
 struct rc_mgr {
 	struct rc_conn* conns;
-} rcmgr;
+};
 
-void rc_send_all(char* buf, int len) {
-	struct rc_conn* rcc = rcmgr.conns;
+void rc_send_all(struct mg_connection* c, char* buf, int len) {
+	struct rc_mgr* rcmgr = (struct rc_mgr*)c->fn_data;
+	struct rc_conn* rcc = rcmgr->conns;
 	while (rcc != NULL) {
 		mg_ws_send(rcc->c, buf, len, WEBSOCKET_OP_TEXT);
 		rcc = rcc->next;
@@ -44,7 +46,8 @@ void rc_send_all(char* buf, int len) {
 
 void rc_user_open(struct mg_connection* c, struct mg_str data) {
 	// Connection check
-	struct rc_conn* rcc = rcmgr.conns;
+	struct rc_mgr* rcmgr = (struct rc_mgr*)c->fn_data;
+	struct rc_conn* rcc = rcmgr->conns;
 	while (rcc != NULL) {
 		if (c == rcc->c) {
 			WS_SEND_CONST(c, "rc_serv_open_err|conn_exists");
@@ -62,7 +65,7 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		return;
 	}
 	// Name/connection duplication check
-	rcc = rcmgr.conns;
+	rcc = rcmgr->conns;
 	while (rcc != NULL) {
 		if (c == rcc->c) {
 			WS_SEND_CONST(c, "rc_serv_open_err|conn_exists");
@@ -83,10 +86,10 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 	strncpy(rcc->name.buf, data.buf, data.len);
 	rcc->c = c;
 	rcc->next = NULL;
-	if (rcmgr.conns == NULL) {
-		rcmgr.conns = rcc;
+	if (rcmgr->conns == NULL) {
+		rcmgr->conns = rcc;
 	} else {
-		LIST_ADD_HEAD(struct rc_conn, &rcmgr.conns, rcc);
+		LIST_ADD_HEAD(struct rc_conn, &rcmgr->conns, rcc);
 	}
 	// TODO: free stuff
 	sds usrstr = sdsnew("rc_serv_users|");
@@ -96,13 +99,14 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 		if (rcc != NULL)
 			usrstr = sdscat(usrstr, ",");
 	}
-	rc_send_all(usrstr, sdslen(usrstr));
+	rc_send_all(c, usrstr, sdslen(usrstr));
 	sdsfree(usrstr);
 	WS_SEND_CONST(c, "rc_serv_open_ok");
 }
 
 void rc_user_close(struct mg_connection* c, struct mg_str data) {
-	struct rc_conn** rccp = &rcmgr.conns;
+	struct rc_mgr* rcmgr = (struct rc_mgr*)c->fn_data;
+	struct rc_conn** rccp = &rcmgr->conns;
 	while (*rccp != NULL) {
 		if (c == (*rccp)->c) {
 			free((*rccp)->name.buf);
@@ -158,7 +162,6 @@ void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
 }
 
 void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
-
 	switch (ev) {
 		case MG_EV_HTTP_MSG:
 			ev_handle_http_msg(c, ev_data);
@@ -177,7 +180,8 @@ void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 int main(void) {
 	struct mg_mgr mgr;
 	mg_mgr_init(&mgr);
-	mg_http_listen(&mgr, "http://0.0.0.0:6969", ev_handler, NULL);
+	struct rc_mgr rcmgr;
+	mg_http_listen(&mgr, "http://0.0.0.0:6969", ev_handler, &rcmgr);
 	for (;;) {
 		mg_mgr_poll(&mgr, 1000);
 	}
