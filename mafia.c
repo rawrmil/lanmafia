@@ -67,10 +67,6 @@ void rc_user_open(struct mg_connection* c, struct mg_str data) {
 	// Name/connection duplication check
 	rcc = rcmgr->conns;
 	while (rcc != NULL) {
-		if (c == rcc->c) {
-			WS_SEND_CONST(c, "rc_serv_open_err|conn_exists");
-			return;
-		}
 		if (mg_strcmp(data, rcc->name) == 0) {
 			WS_SEND_CONST(c, "rc_serv_open_err|name_exists");
 			return;
