@@ -112,7 +112,7 @@ void ac_user_close(struct mg_connection* c, struct mg_str data) {
 			free((*accp)->name.buf);
 			free((*accp));
 			*accp = (*accp)->next;
-			WS_SEND_CONST(c, "c_serv_close_ok");
+			WS_SEND_CONST(c, "c_close|ok");
 			break;
 		}
 		accp = &(*accp)->next;
