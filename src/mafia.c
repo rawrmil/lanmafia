@@ -230,7 +230,7 @@ struct a_config a_get_config(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
 	struct a_config aconf = a_get_config(argc, argv);
 
-	char addr[64];
+	char addr[32];
 	snprintf(addr, sizeof(addr), "http://0.0.0.0:%d", aconf.port);
 	printf("INTERFACE: %s\n", addr);
 
