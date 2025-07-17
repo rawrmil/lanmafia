@@ -1,3 +1,8 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <getopt.h>
+#include <errno.h>
+
 #include "mongoose.h"
 #include "unistr.h"
 #include "sds.h"
@@ -180,9 +185,51 @@ void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	}
 }
 
+// A R G S
+
+struct a_config { // App config
+	int port;
+};
+
+struct a_config a_get_config(int argc, char* argv[]) {
+	struct a_config aconf = {0};
+	aconf.port = 6969;
+
+	static struct option long_options[] = {
+		{"help", no_argument, 0, 'h'},
+		{"port", required_argument, 0, 'p'},
+		{0, 0, 0, 0} // NULL-terminator
+	};
+	
+	int opt;
+	errno = 0;
+	while ((opt = getopt_long(argc, argv, "hp:", long_options, NULL)) != -1) {
+		switch (opt) {
+			case 'h':
+				printf("Help:\n");
+				printf("--port, -p - specify running port for the server\n");
+				break;
+			case 'p':
+				char* endp;
+				aconf.port = strtol(optarg, &endp, 10);
+				if (errno || *endp != '\0') {
+					printf("--port argument is invalid (0-65535)");
+					exit(1);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	return aconf;
+}
+
 // M A I N
 
-int main(void) {
+int main(int argc, char* argv[]) {
+	struct a_config aconf = a_get_config(argc, argv);
+	printf("PORT: %d\n", aconf.port);
 	struct mg_mgr mgr;
 	mg_mgr_init(&mgr);
 	struct ac_mgr acmgr;
