@@ -1,3 +1,3 @@
 #!/bin/sh
 
-ls *.c Makefile | entr -r make build && ./mafia
+ls *.c Makefile | entr -r make run
