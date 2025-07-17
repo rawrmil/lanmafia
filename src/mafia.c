@@ -229,13 +229,14 @@ struct a_config a_get_config(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
 	struct a_config aconf = a_get_config(argc, argv);
-	printf("PORT: %d\n", aconf.port);
-	struct mg_mgr mgr;
-	mg_mgr_init(&mgr);
-	struct ac_mgr acmgr;
+
 	char addr[64];
 	snprintf(addr, sizeof(addr), "http://0.0.0.0:%d", aconf.port);
 	printf("INTERFACE: %s\n", addr);
+
+	struct mg_mgr mgr;
+	mg_mgr_init(&mgr);
+	struct ac_mgr acmgr;
 	mg_http_listen(&mgr, addr, ev_handler, &acmgr);
 	for (;;) {
 		mg_mgr_poll(&mgr, 1000);
