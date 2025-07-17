@@ -65,7 +65,7 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 		acc = acc->next;
 	}
 	// Check name
-	if (data.len > 128 || u8_strlen(data.buf) > 32) {
+	if (data.len < 1 || data.len > 128 || u8_strlen(data.buf) > 32) {
 		WS_SEND_CONST(c, "c_open_err|name_length");
 		return;
 	}
@@ -237,7 +237,7 @@ int main(int argc, char* argv[]) {
 
 	struct mg_mgr mgr;
 	mg_mgr_init(&mgr);
-	struct ac_mgr acmgr;
+	struct ac_mgr acmgr = {0};
 	mgr.userdata = &acmgr;
 	mg_http_listen(&mgr, addr, ev_handler, NULL);
 	for (;;) {
