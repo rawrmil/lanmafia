@@ -6,4 +6,3 @@ prebuild:
 
 build:
 	gcc mafia.c lib/mongoose.o lib/sds.o -o mafia -lunistring -I./lib
-	./mafia
