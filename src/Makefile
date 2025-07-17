@@ -1,9 +1,9 @@
 all: prebuild build
 
 prebuild:
-	gcc -c mongoose.c -o mongoose.o
-	gcc -c sds.c -o sds.o
+	gcc -c lib/mongoose.c -o lib/mongoose.o
+	gcc -c lib/sds.c -o lib/sds.o
 
 build:
-	gcc mafia.c mongoose.o sds.o -o mafia -lunistring
+	gcc mafia.c lib/mongoose.o lib/sds.o -o mafia -lunistring -I./lib
 	./mafia
