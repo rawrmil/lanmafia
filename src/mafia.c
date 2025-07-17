@@ -20,7 +20,7 @@
 			U: 'c_open|<name>' - open user connection with name
 			S: 'c_open_ok' - connection successeful (send data to all players)
 			S: 'c_open_err|<error_id>' - connection unsuccesseful
-			S: 'c_close|ok' - disconnection successeful
+			S: 'c_close_ok' - disconnection successeful
 			<error_id>:
 				'name_length' - name length > 32
 				'name_exists' - name exists
@@ -117,7 +117,7 @@ void ac_user_close(struct mg_connection* c, struct mg_str data) {
 			free((*accp)->name.buf);
 			free((*accp));
 			*accp = (*accp)->next;
-			WS_SEND_CONST(c, "c_close|ok");
+			WS_SEND_CONST(c, "c_close_ok");
 			break;
 		}
 		accp = &(*accp)->next;
