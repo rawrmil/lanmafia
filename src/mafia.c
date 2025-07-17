@@ -4,23 +4,26 @@
 
 // E V E N T S
 
-// EV: Room connections
+// EV: Connections
 /*
 WebSockets:
-- Client message - U
-- Server message - S
-- U/S: '<type>|<data>'
-- CONNECTING/DISCONNECTING:
--- U: 'rc_user_open|<name>' - open connection with name
--- S: 'rc_serv_open_ok' - connection successeful (send data to all players)
--- S: 'rc_serv_open_err|<error_id>' - connection unsuccesseful
--- S: 'rc_serv_close_ok' - disconnection successeful
--- <error_id>:
---- 'name_length' - name length > 32
---- 'name_exists' - name exists
---- 'conn_exists' - connection exists
--- U: 'rc_user_close' - close connection
--- U: '!|<data>' - send message directly to the game engine
+	Client message - U
+	Server message - S
+	U/S: '<type>|<data>'
+	CONNECTING/DISCONNECTING:
+		U: 'c_open|<name>' - open user connection with name
+		S: 'c_open_ok' - connection successeful (send data to all players)
+		S: 'c_open_err|<error_id>' - connection unsuccesseful
+		S: 'c_close|ok' - disconnection successeful
+		<error_id>:
+			'name_length' - name length > 32
+			'name_exists' - name exists
+			'conn_exists' - connection exists
+		U: 'c_close' - close connection
+		U: 'M<data>' - send message directly to the game engine
+	USERS DATA:
+		'c_users|<name1>,<state1>;<name2>,<state2>;...'
+			<state?>: 'c'/'d' - connected/disconnected
 */
 
 struct rc_conn {
