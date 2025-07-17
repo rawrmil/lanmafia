@@ -65,7 +65,7 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 		return;
 	}
 	if (u8_strstr(data.buf, ",") != NULL) {
-		WS_SEND_CONST(c, "c_serv_open_err|name_forbidden");
+		WS_SEND_CONST(c, "c_open_err|name_forbidden");
 		return;
 	}
 	// Name/connection duplication check
@@ -92,7 +92,7 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 		LIST_ADD_HEAD(struct ac_conn, &acmgr->conns, acc);
 	}
 	// TODO: free stuff
-	sds usrstr = sdsnew("c_serv_users|");
+	sds usrstr = sdsnew("c_users|");
 	while (acc != NULL) {
 		usrstr = sdscat(usrstr, acc->name.buf);
 		acc = acc->next;
@@ -101,7 +101,7 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 	}
 	ac_send_all(c, usrstr, sdslen(usrstr));
 	sdsfree(usrstr);
-	WS_SEND_CONST(c, "ac_serv_open_ok");
+	WS_SEND_CONST(c, "c_open_ok");
 }
 
 void ac_user_close(struct mg_connection* c, struct mg_str data) {
@@ -136,23 +136,28 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	}
 }
 
+typedef void (ac_handler)(struct mg_connection* c, struct mg_str data);
 
-#define RC_PREFIX_CASE(_pre, _handler) \
-	{ \
-		if (sizeof(_pre)-1 <= wm->data.len && strncmp(wm->data.buf, _pre, sizeof(_pre)-1) == 0) { \
-			if (sizeof(_pre)-1 == wm->data.len) \
-				_handler(c, (struct mg_str) { .buf = NULL, .len = 0 }); \
-			else \
-				_handler(c, (struct mg_str) { .buf = wm->data.buf+sizeof(_pre), .len = wm->data.len-sizeof(_pre) }); \
-			return; \
-		} \
+char ac_route(struct mg_connection* c, struct mg_str data, char* pre, size_t prelen, ac_handler* handler) {
+	if (prelen > data.len || strncmp(pre, data.buf, prelen) != 0)
+		return 0;
+	struct mg_str handler_data = (struct mg_str){.buf=NULL,.len=0};
+	if (prelen != data.len && prelen != data.len+1) {
+		handler_data.buf = data.buf+prelen+1;
+		handler_data.len = data.len-prelen-1;
 	}
+	handler(c, handler_data);
+	return 1;
+}
+
+#define AC_ROUTE(pre_, handler_) \
+	if (ac_route(c, wm->data, pre_, sizeof(pre_)-1, handler_)) return;
 
 void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-	RC_PREFIX_CASE("c_open", ac_user_open);
-	RC_PREFIX_CASE("c_close", ac_user_close);
-	//RC_PREFIX_CASE("test2", test2)
+	//AC_ROUTE("M", ac_user_open)
+	AC_ROUTE("c_open", ac_user_open)
+	AC_ROUTE("c_close", ac_user_close)
 }
 
 void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
