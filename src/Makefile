@@ -9,3 +9,6 @@ build:
 
 run: build
 	./mafia
+
+#tests: build
+#	gcc tests
