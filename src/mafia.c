@@ -213,7 +213,7 @@ struct a_config a_get_config(int argc, char* argv[]) {
 				char* endp;
 				aconf.port = strtol(optarg, &endp, 10);
 				if (errno || *endp != '\0') {
-					printf("--port argument is invalid (0-65535)");
+					printf("--port argument is invalid (0-65535)\n");
 					exit(1);
 				}
 				break;
@@ -233,7 +233,10 @@ int main(int argc, char* argv[]) {
 	struct mg_mgr mgr;
 	mg_mgr_init(&mgr);
 	struct ac_mgr acmgr;
-	mg_http_listen(&mgr, "http://0.0.0.0:6969", ev_handler, &acmgr);
+	char addr[64];
+	snprintf(addr, sizeof(addr), "http://0.0.0.0:%d", aconf.port);
+	printf("INTERFACE: %s\n", addr);
+	mg_http_listen(&mgr, addr, ev_handler, &acmgr);
 	for (;;) {
 		mg_mgr_poll(&mgr, 1000);
 	}
