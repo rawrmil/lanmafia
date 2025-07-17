@@ -208,6 +208,7 @@ struct a_config a_get_config(int argc, char* argv[]) {
 			case 'h':
 				printf("Help:\n");
 				printf("--port, -p - specify running port for the server\n");
+				exit(0);
 				break;
 			case 'p':
 				char* endp;
