@@ -43,7 +43,7 @@ struct ac_mgr {
 };
 
 void ac_send_all(struct mg_connection* c, char* buf, int len) {
-	struct ac_mgr* acmgr = (struct ac_mgr*)c->fn_data;
+	struct ac_mgr* acmgr = (struct ac_mgr*)c->mgr->userdata;
 	struct ac_conn* acc = acmgr->conns;
 	while (acc != NULL) {
 		mg_ws_send(acc->c, buf, len, WEBSOCKET_OP_TEXT);
@@ -55,7 +55,7 @@ void ac_send_all(struct mg_connection* c, char* buf, int len) {
 
 void ac_user_open(struct mg_connection* c, struct mg_str data) {
 	// Connection check
-	struct ac_mgr* acmgr = (struct ac_mgr*)c->fn_data;
+	struct ac_mgr* acmgr = (struct ac_mgr*)c->mgr->userdata;
 	struct ac_conn* acc = acmgr->conns;
 	while (acc != NULL) {
 		if (c == acc->c) {
@@ -110,7 +110,7 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 }
 
 void ac_user_close(struct mg_connection* c, struct mg_str data) {
-	struct ac_mgr* acmgr = (struct ac_mgr*)c->fn_data;
+	struct ac_mgr* acmgr = (struct ac_mgr*)c->mgr->userdata;
 	struct ac_conn** accp = &acmgr->conns;
 	while (*accp != NULL) {
 		if (c == (*accp)->c) {
@@ -238,7 +238,8 @@ int main(int argc, char* argv[]) {
 	struct mg_mgr mgr;
 	mg_mgr_init(&mgr);
 	struct ac_mgr acmgr;
-	mg_http_listen(&mgr, addr, ev_handler, &acmgr);
+	mgr.userdata = &acmgr;
+	mg_http_listen(&mgr, addr, ev_handler, NULL);
 	for (;;) {
 		mg_mgr_poll(&mgr, 1000);
 	}
