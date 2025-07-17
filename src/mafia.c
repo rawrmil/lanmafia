@@ -11,25 +11,25 @@
 
 // EV: App connections
 /*
-Note: there is mongoose connections and app connections (don't confuse)
-WebSockets:
-	Client message - U
-	Server message - S
-	U/S: '<type>|<data>'
-	CONNECTING/DISCONNECTING:
-		U: 'c_open|<name>' - open user connection with name
-		S: 'c_open_ok' - connection successeful (send data to all players)
-		S: 'c_open_err|<error_id>' - connection unsuccesseful
-		S: 'c_close|ok' - disconnection successeful
-		<error_id>:
-			'name_length' - name length > 32
-			'name_exists' - name exists
-			'conn_exists' - connection exists
-		U: 'c_close' - close connection
-		U: 'M<data>' - send message directly to the game engine
-	USERS DATA:
-		'c_users|<name1>,<state1>;<name2>,<state2>;...'
-			<state?>: 'c'/'d' - connected/disconnected
+	Note: there is mongoose connections and app connections (don't confuse)
+	WebSockets:
+		Client message - U
+		Server message - S
+		U/S: '<type>|<data>'
+		CONNECTING/DISCONNECTING:
+			U: 'c_open|<name>' - open user connection with name
+			S: 'c_open_ok' - connection successeful (send data to all players)
+			S: 'c_open_err|<error_id>' - connection unsuccesseful
+			S: 'c_close|ok' - disconnection successeful
+			<error_id>:
+				'name_length' - name length > 32
+				'name_exists' - name exists
+				'conn_exists' - connection exists
+			U: 'c_close' - close connection
+			U: 'M<data>' - send message directly to the game engine
+		USERS DATA:
+			'c_users|<name1>,<state1>;<name2>,<state2>;...'
+				<state?>: 'c'/'d' - connected/disconnected
 */
 
 struct ac_conn {
