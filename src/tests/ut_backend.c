@@ -11,12 +11,14 @@ char is_connected = 0;
 struct ut_ws_conn {
 	int index;
 	sds responce;
+	unsigned is_connected : 1;
+	unsigned got_responce : 1;
 };
 
 void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 	switch (ev) {
 		case MG_EV_WS_OPEN:
-			is_connected = 1;
+			((struct ut_ws_conn*)c->fn_data)->is_connected = 1;
 			break;
 		case MG_EV_WS_MSG:
 			//struct mg_ws_message *wm = (struct mg_ws_message*)ev_data;
@@ -27,12 +29,23 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 }
 
 void ut_connect(struct mg_connection* c) {
-	is_connected = 0;
-	while (!is_connected) {
+	struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
+	utwsc->is_connected = 0;
+	while (!utwsc->is_connected) {
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	printf("CONNECTION %d OK\n", ((struct ut_ws_conn*)c->fn_data)->index);
+	printf("CONNECTION %d OK\n", utwsc->index);
 }
+
+//void ut_send(struct mg_connection* c, char* msg) {
+//	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
+//}
+
+//void ut_expect(struct mg_connection* c, char* res) {
+//	while (!is_responce) {
+//		mg_mgr_poll(c->mgr, 1000);
+//	}
+//}
 
 int main() {
 	printf("BACKEND TESTS:\n");
@@ -49,7 +62,6 @@ int main() {
 		}
 	}
 	ut_connect(wsc[0]);
-	usleep(1000*1000*5);
-	ut_connect(wsc[1]);
+	//ut_send(wsc[0], "c_open|Coolname666");
 	return 0;
 }
