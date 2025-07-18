@@ -12,5 +12,5 @@ run: build
 
 tests: build
 	gcc tests/ut_backend.c lib/mongoose.o lib/sds.o -o tests/ut_backend -lpthread -I./lib
-	./mafia > /dev/null 2>&1 &
+	#./mafia > /dev/null 2>&1 &
 	./tests/ut_backend
