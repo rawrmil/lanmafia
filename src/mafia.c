@@ -96,7 +96,7 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 	} else {
 		LIST_ADD_HEAD(struct ac_conn, &acmgr->conns, acc);
 	}
-	// TODO: free stuff
+	WS_SEND_CONST(c, "c_open_ok");
 	sds usrstr = sdsnew("c_users|");
 	while (acc != NULL) {
 		usrstr = sdscat(usrstr, acc->name.buf);
@@ -106,7 +106,6 @@ void ac_user_open(struct mg_connection* c, struct mg_str data) {
 	}
 	ac_send_all(c, usrstr, sdslen(usrstr));
 	sdsfree(usrstr);
-	WS_SEND_CONST(c, "c_open_ok");
 }
 
 void ac_user_close(struct mg_connection* c, struct mg_str data) {
