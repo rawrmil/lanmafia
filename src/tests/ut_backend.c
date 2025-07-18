@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "mongoose.h"
 #include "sds.h"
+
+char is_connected = 0;
 
 struct ut_ws_conn {
 	int index;
@@ -11,10 +14,9 @@ struct ut_ws_conn {
 };
 
 void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
-
 	switch (ev) {
 		case MG_EV_WS_OPEN:
-			printf("CONNECTION %d OK\n", ((struct ut_ws_conn*)c->fn_data)->index);
+			is_connected = 1;
 			break;
 		case MG_EV_WS_MSG:
 			//struct mg_ws_message *wm = (struct mg_ws_message*)ev_data;
@@ -24,15 +26,13 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 	}
 }
 
-//enum ut_action_type {
-//	AT_SEND = 0,
-//	AT_EXPECT,
-//}
-//
-//struct ut_action {
-//	ut_action_type type;
-//	char* buf;
-//}
+void ut_connect(struct mg_connection* c) {
+	is_connected = 0;
+	while (!is_connected) {
+		mg_mgr_poll(c->mgr, 1000);
+	}
+	printf("CONNECTION %d OK\n", ((struct ut_ws_conn*)c->fn_data)->index);
+}
 
 int main() {
 	printf("BACKEND TESTS:\n");
@@ -48,10 +48,8 @@ int main() {
 			return 1;
 		}
 	}
-	for (;;) {
-		for (int i = 0; i < 16; i++) {
-			mg_mgr_poll(&mgr, 1000);
-		}
-	}
+	ut_connect(wsc[0]);
+	usleep(1000*1000*5);
+	ut_connect(wsc[1]);
 	return 0;
 }
