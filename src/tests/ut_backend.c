@@ -1,43 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 #include "mongoose.h"
 #include "sds.h"
 
-pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t signal_cond = PTHREAD_COND_INITIALIZER;
+struct ut_ws_conn {
+	sds responce;
+};
 
-char signal_ready = 0;
-sds signal_message = NULL;
-
-void* ws_thread_func(void* arg) {
-	int a = 0;
-	for (int i = 0; i < 10; i++)
-		a += 1;
-	pthread_mutex_lock(&signal_mutex);
-	signal_ready = 1;
-	char buf[32];
-	snprintf(buf, sizeof(buf), "BLAH: %d", a);
-	signal_message = sdsnewlen(buf, sizeof(buf));
-	pthread_cond_signal(&signal_cond);
-	pthread_mutex_unlock(&signal_mutex);
+void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
+	switch (ev) {
+		case MG_EV_WS_OPEN:
+			printf("CONNECTION SUCCESSEFUL\n");
+			break;
+		case MG_EV_WS_MSG:
+			//struct mg_ws_message *wm = (struct mg_ws_message*)ev_data;
+			break;
+		case MG_EV_CLOSE:
+			break;
+	}
 }
+
+//enum ut_action_type {
+//	AT_SEND = 0,
+//	AT_EXPECT,
+//}
+//
+//struct ut_action {
+//	ut_action_type type;
+//	char* buf;
+//}
 
 int main() {
 	printf("BACKEND TESTS:\n");
-	pthread_t thread;
-	pthread_create(&thread, NULL, ws_thread_func, NULL);
-
-	pthread_mutex_lock(&signal_mutex);
-	while (!signal_ready) {
-		pthread_cond_wait(&signal_cond, &signal_mutex);
+	struct mg_mgr mgr[16];
+	struct mg_connection* wsc[16];
+	struct ut_ws_conn utwsc[16];
+	for (int i = 0; i < 16; i++) {
+		mg_mgr_init(&mgr[i]);
+		wsc[i] = mg_ws_connect(&mgr[i], "http://localhost:6969/ws", ev_handle, &utwsc[i], NULL);
+		if (wsc[i] == NULL) {
+			printf("WS-SERVER CONNECTION ERROR\n");
+			return 1;
+		}
 	}
-	pthread_mutex_unlock(&signal_mutex);
-
-	pthread_join(thread, NULL);
-
-	printf("MESSAGE: '%s'\n", signal_message);
+	for (;;) {
+		for (int i = 0; i < 16; i++) {
+			mg_mgr_poll(&mgr[i], 1000);
+		}
+	}
 	return 0;
 }
