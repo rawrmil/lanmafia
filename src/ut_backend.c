@@ -12,6 +12,8 @@
 #define LOG_VERBOSE(fmt, ...)
 #endif
 
+// C O N N E C T I O N
+
 struct ut_ws_conn {
 	int index;
 	sds responce;
@@ -35,7 +37,7 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 				struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
 				LOG_VERBOSE("INDEX: %d\n", utwsc->index);
 				struct mg_ws_message *wm = (struct mg_ws_message*)ev_data;
-				LOG_VERBOSE("DATA: '%*.s'\n", wm->data.len, wm->data.buf);
+				LOG_VERBOSE("DATA: '%.*s'\n", wm->data.len, wm->data.buf);
 				utwsc->responce = sdsnewlen(wm->data.buf, wm->data.len);
 				utwsc->got_responce = 1;
 			}
@@ -53,17 +55,21 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 	}
 }
 
+// T E S T   U T I L S
+
+char ut_success;
+
 char ut_connect(struct mg_connection* c) {
 	struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
 	utwsc->is_connected = 0;
 	while (!utwsc->is_connected) {
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	printf("Connection %d established\n", utwsc->index);
+	LOG_VERBOSE("Connection %d established\n", utwsc->index);
 }
 
 void ut_send(struct mg_connection* c, char* msg) {
-	printf("SEND: %s\n");
+	LOG_VERBOSE("SEND: %s\n");
 	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
 }
 
@@ -73,29 +79,45 @@ void ut_expect(struct mg_connection* c, char* res) {
 	while (!utwsc->got_responce) {
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	printf("RESPONCE: '%s'\n", utwsc->responce);
+	LOG_VERBOSE("EXPECTED: '%s'\n", res);
+	LOG_VERBOSE("RESPONCE: '%s'\n", utwsc->responce);
+	if (strcmp(utwsc->responce, res) != 0)
+		return;
 	sdsfree(utwsc->responce);
+	ut_success |= 1;
 }
 
+// T E S T S
+
+char test_conn_open(struct mg_connection* c[]) {
+	ut_send(c[0], "c_open|Coolname666");
+	ut_expect(c[0], "c_open_ok");
+	ut_expect(c[0], "c_users|Coolname666");
+	return 1;
+}
+
+#define UNIT_TEST(c_, name_, testfunc_) \
+	do { \
+		ut_success = 0; \
+		printf("UNIT-TEST: %s: %s", name_, testfunc_(c_) ? "✔️OK" : "❌ERR"); \
+	} while (0);
+
+// M A I N
+
 int main() {
-	printf("VERBOSE: %d\n", VERBOSE);
-	LOG_VERBOSE("LOL\n");
-	return 0;
 	printf("BACKEND UNIT-TESTS:\n");
-	printf("Initializing WS connections...\n");
+	LOG_VERBOSE("Initializing WS connections...\n");
 	struct mg_mgr mgr;
 	struct mg_connection* c[16];
 	struct ut_ws_conn utwsc[16] = {0};
 	mg_mgr_init(&mgr);
 	for (int i = 0; i < 16; i++) {
 		utwsc[i].index = i;
-		printf("Connection %d... \n", i);
+		LOG_VERBOSE("Connection %d... \n", i);
 		c[i] = mg_ws_connect(&mgr, "http://localhost:6969/ws", ev_handle, &utwsc[i], NULL);
 	}
-	printf("Begin testing...\n");
+	LOG_VERBOSE("Begin testing...\n");
 	ut_connect(c[0]);
-	ut_send(c[0], "c_open|Coolname666");
-	ut_expect(c[0], "c_open_ok");
-	ut_expect(c[0], "c_users|Coolname666");
+	UNIT_TEST(c, "CONNECTION OPEN", test_conn_open);
 	return 0;
 }
