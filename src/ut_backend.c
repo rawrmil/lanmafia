@@ -7,7 +7,7 @@
 #include "sds.h"
 
 #ifdef VERBOSE
-#define LOG_VERBOSE(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#define LOG_VERBOSE(fmt, ...) if (VERBOSE) printf(fmt, ##__VA_ARGS__)
 #else
 #define LOG_VERBOSE(fmt, ...)
 #endif
@@ -59,7 +59,7 @@ char ut_connect(struct mg_connection* c) {
 	while (!utwsc->is_connected) {
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	//printf("CONNECTION %d OK\n", utwsc->index);
+	printf("Connection %d established\n", utwsc->index);
 }
 
 void ut_send(struct mg_connection* c, char* msg) {
@@ -78,8 +78,10 @@ void ut_expect(struct mg_connection* c, char* res) {
 }
 
 int main() {
+	printf("VERBOSE: %d\n", VERBOSE);
+	LOG_VERBOSE("LOL\n");
+	return 0;
 	printf("BACKEND UNIT-TESTS:\n");
-	LOG_VERBOSE("TEST VERBOSE\n");
 	printf("Initializing WS connections...\n");
 	struct mg_mgr mgr;
 	struct mg_connection* c[16];

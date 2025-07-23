@@ -1,4 +1,4 @@
-VERBOSE ?= 0
+UT_VERBOSE ?= 0
 
 all: prebuild build
 
@@ -13,6 +13,6 @@ run: build
 	./mafia
 
 tests: build
-	gcc ut_backend.c lib/mongoose.o lib/sds.o -o ut_backend -lpthread -I./lib -DVERBOSE=$(VERBOSE)
+	gcc ut_backend.c lib/mongoose.o lib/sds.o -o ut_backend -lpthread -I./lib -DVERBOSE=$(UT_VERBOSE)
 	#./mafia > /dev/null 2>&1 &
 	./ut_backend
