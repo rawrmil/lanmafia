@@ -227,7 +227,7 @@ struct a_config a_get_config(int argc, char* argv[]) {
 
 // M A I N
 
-int main(int argc, char* argv[]) {
+void a_main() {
 	struct a_config aconf = a_get_config(argc, argv);
 
 	char addr[32];
@@ -242,5 +242,9 @@ int main(int argc, char* argv[]) {
 	for (;;) {
 		mg_mgr_poll(&mgr, 1000);
 	}
-	return 0;
+}
+
+// For unit testing
+int main(int argc, char* argv[]) {
+	a_main();
 }
