@@ -227,7 +227,7 @@ struct a_config a_get_config(int argc, char* argv[]) {
 
 // M A I N
 
-void a_main() {
+void a_main(int argc, char* argv[]) {
 	struct a_config aconf = a_get_config(argc, argv);
 
 	char addr[32];
@@ -246,5 +246,5 @@ void a_main() {
 
 // For unit testing
 int main(int argc, char* argv[]) {
-	a_main();
+	a_main(argc, argv);
 }
