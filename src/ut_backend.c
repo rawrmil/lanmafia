@@ -23,7 +23,7 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 	switch (ev) {
 		case MG_EV_WS_OPEN:
 			{
-				LOG_VERBOSE("WS: OPEN");
+				LOG_VERBOSE("WS: OPEN: ");
 				struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
 				LOG_VERBOSE("INDEX: %d\n", utwsc->index);
 				utwsc->is_connected = 1;
@@ -31,7 +31,7 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 			break;
 		case MG_EV_WS_MSG:
 			{
-				LOG_VERBOSE("WS: MSG");
+				LOG_VERBOSE("WS: MSG: ");
 				struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
 				LOG_VERBOSE("INDEX: %d\n", utwsc->index);
 				struct mg_ws_message *wm = (struct mg_ws_message*)ev_data;
@@ -42,16 +42,24 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 			break;
 		case MG_EV_CLOSE:
 			break;
+		case MG_EV_ERROR:
+			{
+				LOG_VERBOSE("WS: ERROR: ");
+				struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
+				printf("FATAL: Couldn't establish %d connection\n", utwsc->index);
+				exit(1);
+			}
+			break;
 	}
 }
 
-void ut_connect(struct mg_connection* c) {
+char ut_connect(struct mg_connection* c) {
 	struct ut_ws_conn* utwsc = (struct ut_ws_conn*)c->fn_data;
 	utwsc->is_connected = 0;
 	while (!utwsc->is_connected) {
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	printf("CONNECTION %d OK\n", utwsc->index);
+	//printf("CONNECTION %d OK\n", utwsc->index);
 }
 
 void ut_send(struct mg_connection* c, char* msg) {
@@ -79,7 +87,7 @@ int main() {
 	mg_mgr_init(&mgr);
 	for (int i = 0; i < 16; i++) {
 		utwsc[i].index = i;
-		printf("Connection %d... \n");
+		printf("Connection %d... \n", i);
 		c[i] = mg_ws_connect(&mgr, "http://localhost:6969/ws", ev_handle, &utwsc[i], NULL);
 	}
 	printf("Begin testing...\n");
