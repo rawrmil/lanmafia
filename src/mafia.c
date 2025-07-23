@@ -244,7 +244,8 @@ void a_main(int argc, char* argv[]) {
 	}
 }
 
-// For unit testing
+#ifndef UNIT_TESTING
 int main(int argc, char* argv[]) {
 	a_main(argc, argv);
 }
+#endif /* UNIT_TESTING */
