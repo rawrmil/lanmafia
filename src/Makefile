@@ -14,5 +14,5 @@ run: build
 
 tests: build
 	gcc -c mafia.c -o mafia.o -I./lib -DUNIT_TESTING
-	gcc ut_backend.c mafia.o lib/mongoose.o lib/sds.o -o ut_backend -lunistring -lpthread -I./lib -DVERBOSE=$(UT_VERBOSE)
-	./ut_backend
+	gcc tests.c mafia.o lib/mongoose.o lib/sds.o -o tests -lunistring -lpthread -I./lib -DVERBOSE=$(UT_VERBOSE)
+	./tests
