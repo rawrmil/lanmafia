@@ -1,5 +1,8 @@
 UT_VERBOSE ?= 0
 
+LIB=lib/log.c lib/mongoose.o lib/sds.o -lunistring
+INC=-I./lib
+
 all: prebuild build
 
 prebuild:
@@ -7,12 +10,12 @@ prebuild:
 	gcc -c lib/sds.c -o lib/sds.o
 
 build:
-	gcc mafia.c lib/log.c lib/mongoose.o lib/sds.o -o mafia -lunistring -I./lib
+	gcc mafia.c -o mafia $(LIB) $(INC)
 
 run: build
 	./mafia
 
 tests: build
-	gcc -c mafia.c -o mafia.o -I./lib -DUNIT_TESTING
-	gcc tests.c mafia.o lib/mongoose.o lib/sds.o -o tests -lunistring -lpthread -I./lib -DVERBOSE=$(UT_VERBOSE)
+	gcc -c mafia.c -o mafia.o $(INC) -DUNIT_TESTING
+	gcc tests.c mafia.o -o tests $(LIB) $(INC) -lpthread -DVERBOSE=$(UT_VERBOSE)
 	./tests
