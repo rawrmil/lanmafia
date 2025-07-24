@@ -7,7 +7,7 @@ prebuild:
 	gcc -c lib/sds.c -o lib/sds.o
 
 build:
-	gcc mafia.c lib/mongoose.o lib/sds.o -o mafia -lunistring -I./lib
+	gcc mafia.c lib/log.c lib/mongoose.o lib/sds.o -o mafia -lunistring -I./lib
 
 run: build
 	./mafia
