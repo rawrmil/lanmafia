@@ -91,6 +91,7 @@ void ut_expect(struct mg_connection* c, char* res) {
 // T E S T S
 
 char test_conn_open(struct mg_connection* c[]) {
+	printf("!!!\n");
 	ut_send(c[0], "c_open|Coolname666");
 	ut_expect(c[0], "c_open_ok");
 	ut_expect(c[0], "c_users|Coolname666");
@@ -124,6 +125,8 @@ int main() {
 		printf("FATAL: Cannot create a thread");
 		return 1;
 	}
+
+	sleep(1);
 
 	LOG_VERBOSE("Initializing WS connections...\n");
 
