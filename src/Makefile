@@ -1,4 +1,4 @@
-UT_VERBOSE ?= 0
+UT_DEBUG ?= 0
 
 LIB=lib/log.c lib/mongoose.o lib/sds.o -lunistring
 INC=-I./lib
@@ -17,5 +17,5 @@ run: build
 
 tests: build
 	gcc -c mafia.c -o mafia.o $(INC) -DUNIT_TESTING
-	gcc tests.c mafia.o -o tests $(LIB) $(INC) -lpthread -DVERBOSE=$(UT_VERBOSE)
+	gcc tests.c mafia.o -o tests $(LIB) $(INC) -lpthread -DDEBUG=$(UT_DEBUG)
 	./tests
