@@ -6,6 +6,7 @@
 #include "mongoose.h"
 #include "unistr.h"
 #include "sds.h"
+#include "log.h"
 
 // E V E N T S
 
@@ -197,12 +198,15 @@ struct a_config a_get_config(int argc, char* argv[]) {
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"port", required_argument, 0, 'p'},
+		{"log-level-info", no_argument, 0, 'I'},
+		{"log-level-debug", no_argument, 0, 'D'},
 		{0, 0, 0, 0} // NULL-terminator
 	};
 	
 	int opt;
 	errno = 0;
-	while ((opt = getopt_long(argc, argv, "hp:", long_options, NULL)) != -1) {
+	log_set_level(LOG_INFO);
+	while ((opt = getopt_long(argc, argv, "hp:ID", long_options, NULL)) != -1) {
 		switch (opt) {
 			case 'h':
 				printf("Help:\n");
@@ -217,6 +221,8 @@ struct a_config a_get_config(int argc, char* argv[]) {
 					exit(1);
 				}
 				break;
+			case 'I': log_set_level(LOG_INFO); break;
+			case 'D': log_set_level(LOG_DEBUG); break;
 			default:
 				break;
 		}
