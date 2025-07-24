@@ -132,7 +132,7 @@ void ev_handle_http_msg(struct mg_connection* c, void* ev_data) {
 	struct mg_http_message* hm = (struct mg_http_message*)ev_data;
 	if (mg_strcmp(hm->uri, mg_str("/ws")) == 0) {
 		mg_ws_upgrade(c, hm, NULL);
-		printf("WS: New conn\n");
+		log_debug("WS: New conn\n");
 		return;
 	}
 	if (!strncmp(hm->method.buf, "GET", 3)) {
@@ -200,13 +200,14 @@ struct a_config a_get_config(int argc, char* argv[]) {
 		{"port", required_argument, 0, 'p'},
 		{"log-level-info", no_argument, 0, 'I'},
 		{"log-level-debug", no_argument, 0, 'D'},
+		{"log-level-fatal", no_argument, 0, 'F'},
 		{0, 0, 0, 0} // NULL-terminator
 	};
 	
 	int opt;
 	errno = 0;
 	log_set_level(LOG_INFO);
-	while ((opt = getopt_long(argc, argv, "hp:ID", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "hp:IDF", long_options, NULL)) != -1) {
 		switch (opt) {
 			case 'h':
 				printf("Help:\n");
@@ -223,6 +224,7 @@ struct a_config a_get_config(int argc, char* argv[]) {
 				break;
 			case 'I': log_set_level(LOG_INFO); break;
 			case 'D': log_set_level(LOG_DEBUG); break;
+			case 'F': log_set_level(LOG_FATAL); break;
 			default:
 				break;
 		}
@@ -238,7 +240,8 @@ void a_main(int argc, char* argv[]) {
 
 	char addr[32];
 	snprintf(addr, sizeof(addr), "http://0.0.0.0:%d", aconf.port);
-	printf("INTERFACE: %s\n", addr);
+
+	log_info("INTERFACE: %s", addr);
 
 	struct mg_mgr mgr;
 	mg_mgr_init(&mgr);
