@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <unistd.h>
 
 #include "mongoose.h"
@@ -55,7 +56,7 @@ void ev_handle(struct mg_connection* c, int ev, void* ev_data) {
 	}
 }
 
-// T E S T   U T I L S
+// U T I L S
 
 char ut_success;
 
@@ -96,17 +97,36 @@ char test_conn_open(struct mg_connection* c[]) {
 	return 1;
 }
 
-#define UNIT_TEST(c_, name_, testfunc_) \
-	do { \
-		ut_success = 0; \
+#define UNIT_TEST(server_thread_, c_, name_, testfunc_)                  \
+	do {                                                                   \
+		ut_success = 0;                                                      \
+		pthread_join(server_thread, NULL);                                   \
 		printf("UNIT-TEST: %s: %s", name_, testfunc_(c_) ? "✔️OK" : "❌ERR"); \
+		pthread_cancel(server_thread);                                       \
 	} while (0);
 
 // M A I N
 
+void a_main(int argc, char* argv[]); // From mafia.c
+
+void* server_thread_func(void* arg) {
+	char* argv[] = { "mafia", "--port", "7998" };
+	a_main(3, argv);
+}
+
 int main() {
 	printf("BACKEND UNIT-TESTS:\n");
+
+	LOG_VERBOSE("Initializing server thread...\n");
+
+	pthread_t server_thread;
+	if (pthread_create(&server_thread, NULL, server_thread_func, NULL)) {
+		printf("FATAL: Cannot create a thread");
+		return 1;
+	}
+
 	LOG_VERBOSE("Initializing WS connections...\n");
+
 	struct mg_mgr mgr;
 	struct mg_connection* c[16];
 	struct ut_ws_conn utwsc[16] = {0};
@@ -114,10 +134,14 @@ int main() {
 	for (int i = 0; i < 16; i++) {
 		utwsc[i].index = i;
 		LOG_VERBOSE("Connection %d... \n", i);
-		c[i] = mg_ws_connect(&mgr, "http://localhost:6969/ws", ev_handle, &utwsc[i], NULL);
+		c[i] = mg_ws_connect(&mgr, "http://localhost:7998/ws", ev_handle, &utwsc[i], NULL);
 	}
+
 	LOG_VERBOSE("Begin testing...\n");
+
 	ut_connect(c[0]);
-	UNIT_TEST(c, "CONNECTION OPEN", test_conn_open);
+
+	UNIT_TEST(server_thread, c, "CONNECTION OPEN", test_conn_open);
+
 	return 0;
 }
