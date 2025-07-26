@@ -86,6 +86,8 @@ char ws_expect(struct mg_connection* c, char* exp) {
 
 void ws_restart(struct mg_mgr* mgr) {
 	mg_ws_send(mgr->conns, "c_server_restart", 16, WEBSOCKET_OP_TEXT);
+	mg_mgr_free(mgr);
+	mg_mgr_poll(mgr, 1000);
 }
 
 // T E S T S
@@ -108,6 +110,7 @@ char utf_conn_part1() {
 	ws_send(c[0], "c_open|Someguy1");
 	UT_ASSERT(ws_expect(c[0], "c_open_ok"));
 	UT_ASSERT(ws_expect(c[0], "c_users|Someguy1"));
+	ws_restart(&mgr);
 	return 1;
 }
 
@@ -117,6 +120,7 @@ char utf_conn_part2() {
 	ws_send(c[0], "c_open|Someguy2");
 	UT_ASSERT(ws_expect(c[0], "c_open_ok"));
 	UT_ASSERT(ws_expect(c[0], "c_users|Someguy2"));
+	ws_restart(&mgr);
 	return 1;
 }
 
