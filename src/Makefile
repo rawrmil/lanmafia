@@ -1,7 +1,7 @@
 UT_DEBUG ?= 0
 
 LIB=lib/log.c lib/mongoose.o lib/sds.o -lunistring
-INC=-I./lib -I./lib/klib
+INC=-I./lib
 
 all: prebuild build
 
