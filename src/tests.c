@@ -4,11 +4,13 @@
 
 #include "mongoose.h"
 #include "sds.h"
+#include "klib/klist.h"
 
-struct ws_conn_data{
-	sds responce;
+KLIST_INIT(respque, sds, free)
+
+struct ws_conn_data {
+	klist_t(respque)* respque;
 	unsigned is_connected : 1;
-	unsigned got_responce : 1;
 };
 
 void ws_ev_handler(struct mg_connection* c, int ev, void* ev_data) {
@@ -16,18 +18,17 @@ void ws_ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	switch (ev) {
 		case MG_EV_WS_OPEN:
 			printf("WS_OPEN\n");
+			cd->respque = kl_init(respque);
 			cd->is_connected = 1;
 			break;
 		case MG_EV_WS_MSG:
 			printf("WS_MSG\n");
 			struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-			cd->got_responce = 1;
-			cd->responce = sdsnewlen(wm->data.buf, wm->data.len);
-			printf("DATA: '%s'\n", cd->responce);
+			sds resp = sdsnewlen(wm->data.buf, wm->data.len);
+			*kl_pushp(respque, cd->respque) = resp;
 			break;
 		case MG_EV_CLOSE:
 			printf("WS_CLOSE\n");
-			sdsfree(cd->responce);
 			free(cd);
 			break;
 		case MG_EV_ERROR:
@@ -61,10 +62,10 @@ void ws_send(struct mg_connection* c, char* msg) {
 
 void ws_expect(struct mg_connection* c, char* exp) {
 	struct ws_conn_data* cd = (struct ws_conn_data*)c->fn_data;
-	cd->got_responce = 0;
+	sds resp;
 	for (int i = 0;; i++) {
 		printf("POLL: %d\n", i);
-		if (cd->got_responce)
+		if (kl_shift(respque, cd->respque, &resp) == 0)
 			break;
 		if (i == 3) {
 			// TODO: Error
@@ -73,8 +74,8 @@ void ws_expect(struct mg_connection* c, char* exp) {
 		mg_mgr_poll(c->mgr, 1000);
 	}
 	printf("EXPECT: '%s'\n", exp);
-	printf("GOT:    '%s'\n", cd->responce);
-	sdsfree(cd->responce);
+	printf("GOT:    '%s'\n", resp);
+	sdsfree(resp);
 }
 
 void ws_disconnect(struct mg_connection* c) {
