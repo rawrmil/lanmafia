@@ -59,6 +59,7 @@ void ws_connect(struct mg_mgr* mgr, struct mg_connection** cp) {
 void ws_send(struct mg_connection* c, char* msg) {
 	printf("SEND:   '%s'\n", msg);
 	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
+	mg_mgr_poll(c->mgr, 1000);
 }
 
 char ws_expect(struct mg_connection* c, char* exp) {
@@ -78,6 +79,10 @@ char ws_expect(struct mg_connection* c, char* exp) {
 	//printf("GOT:    '%s'\n", resp);
 	return strcmp(exp, resp) == 0;
 	sdsfree(resp);
+}
+
+void ws_restart(struct mg_mgr* mgr) {
+	mg_ws_send(mgr->conns, "c_server_restart", 16, WEBSOCKET_OP_TEXT);
 }
 
 // T E S T S
@@ -105,6 +110,15 @@ char utf_conn_part1() {
 	return 1;
 }
 
+char utf_conn_part2() {
+	UT_DEFINE_CONN_DATA();
+	ws_connect(&mgr, &c[0]);
+	ws_send(c[0], "c_open|Someguy2");
+	UT_ASSERT(ws_expect(c[0], "c_open_ok"));
+	UT_ASSERT(ws_expect(c[0], "c_users|Someguy2"));
+	return 1;
+}
+
 // M A I N
 
 #define UNIT_TEST(utf_) \
@@ -113,4 +127,5 @@ char utf_conn_part1() {
 int main() {
 	size_t ut_count = 0;
 	UNIT_TEST(utf_conn_part1);
+	UNIT_TEST(utf_conn_part2);
 }
