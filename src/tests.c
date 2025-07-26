@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "mongoose.h"
 #include "sds.h"
@@ -60,11 +61,11 @@ void ws_send(struct mg_connection* c, char* msg) {
 	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
 }
 
-void ws_expect(struct mg_connection* c, char* exp) {
+char ws_expect(struct mg_connection* c, char* exp) {
 	struct ws_conn_data* cd = (struct ws_conn_data*)c->fn_data;
 	sds resp;
 	for (int i = 0;; i++) {
-		printf("POLL: %d\n", i);
+		//printf("POLL: %d\n", i);
 		if (kl_shift(respque, cd->respque, &resp) == 0)
 			break;
 		if (i == 3) {
@@ -73,21 +74,43 @@ void ws_expect(struct mg_connection* c, char* exp) {
 		}
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	printf("EXPECT: '%s'\n", exp);
-	printf("GOT:    '%s'\n", resp);
+	//printf("EXPECT: '%s'\n", exp);
+	//printf("GOT:    '%s'\n", resp);
+	return strcmp(exp, resp) == 0;
 	sdsfree(resp);
 }
 
-void ws_disconnect(struct mg_connection* c) {
-	c->is_closing = 1;
-}
+// T E S T S
 
-int main() {
-	struct mg_mgr mgr;
-	struct mg_connection* c[16] = {0};
+#define DEBUG 1
+
+#define UT_ASSERT(cond_) \
+	if (DEBUG) { printf("  UT_ASSERT: %s\n", #cond_); } \
+	if (!(cond_)) { \
+		return 0; \
+		if (DEBUG) exit(1); \
+	}
+
+#define UT_DEFINE_CONN_DATA() \
+	struct mg_mgr mgr; \
+	struct mg_connection* c[16] = {0}; \
 	mg_mgr_init(&mgr);
+
+char utf_conn_part1() {
+	UT_DEFINE_CONN_DATA();
 	ws_connect(&mgr, &c[0]);
 	ws_send(c[0], "c_open|Someguy1");
-	ws_expect(c[0], "c_open_ok");
-	ws_expect(c[0], "c_users|Someguy1");
+	UT_ASSERT(ws_expect(c[0], "c_open_ok"));
+	UT_ASSERT(ws_expect(c[0], "c_users|Someguy1"));
+	return 1;
+}
+
+// M A I N
+
+#define UNIT_TEST(utf_) \
+		printf("%d. %s: %s\n", ut_count++, #utf_, utf_() ? "[SUCC]" : "[FAIL]");
+
+int main() {
+	size_t ut_count = 0;
+	UNIT_TEST(utf_conn_part1);
 }
