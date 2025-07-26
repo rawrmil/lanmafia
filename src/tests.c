@@ -7,6 +7,9 @@
 #include "sds.h"
 #include "klib/klist.h"
 
+#define LOG_DEBUG(format_, ...) \
+	if (DEBUG) printf(format_, ##__VA_ARGS__);
+
 KLIST_INIT(respque, sds, free)
 
 struct ws_conn_data {
@@ -18,22 +21,22 @@ void ws_ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	struct ws_conn_data* cd = (struct ws_conn_data*)c->fn_data;
 	switch (ev) {
 		case MG_EV_WS_OPEN:
-			printf("WS_OPEN\n");
+			LOG_DEBUG("WS_OPEN\n");
 			cd->respque = kl_init(respque);
 			cd->is_connected = 1;
 			break;
 		case MG_EV_WS_MSG:
-			printf("WS_MSG\n");
+			LOG_DEBUG("WS_MSG\n");
 			struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
 			sds resp = sdsnewlen(wm->data.buf, wm->data.len);
 			*kl_pushp(respque, cd->respque) = resp;
 			break;
 		case MG_EV_CLOSE:
-			printf("WS_CLOSE\n");
+			LOG_DEBUG("WS_CLOSE\n");
 			free(cd);
 			break;
 		case MG_EV_ERROR:
-			printf("WS_ERROR\n");
+			LOG_DEBUG("WS_ERROR\n");
 			// TODO: Log error
 			exit(1);
 			break;
@@ -57,7 +60,7 @@ void ws_connect(struct mg_mgr* mgr, struct mg_connection** cp) {
 }
 
 void ws_send(struct mg_connection* c, char* msg) {
-	printf("SEND:   '%s'\n", msg);
+	LOG_DEBUG("SEND:   '%s'\n", msg);
 	mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
 	mg_mgr_poll(c->mgr, 1000);
 }
@@ -66,7 +69,7 @@ char ws_expect(struct mg_connection* c, char* exp) {
 	struct ws_conn_data* cd = (struct ws_conn_data*)c->fn_data;
 	sds resp;
 	for (int i = 0;; i++) {
-		//printf("POLL: %d\n", i);
+		LOG_DEBUG("POLL: %d\n", i);
 		if (kl_shift(respque, cd->respque, &resp) == 0)
 			break;
 		if (i == 3) {
@@ -75,8 +78,8 @@ char ws_expect(struct mg_connection* c, char* exp) {
 		}
 		mg_mgr_poll(c->mgr, 1000);
 	}
-	//printf("EXPECT: '%s'\n", exp);
-	//printf("GOT:    '%s'\n", resp);
+	LOG_DEBUG("EXPECT: '%s'\n", exp);
+	LOG_DEBUG("GOT:    '%s'\n", resp);
 	return strcmp(exp, resp) == 0;
 	sdsfree(resp);
 }
@@ -86,8 +89,6 @@ void ws_restart(struct mg_mgr* mgr) {
 }
 
 // T E S T S
-
-#define DEBUG 1
 
 #define UT_ASSERT(cond_) \
 	if (DEBUG) { printf("  UT_ASSERT: %s\n", #cond_); } \
