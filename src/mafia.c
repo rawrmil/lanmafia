@@ -7,6 +7,58 @@
 #include "unistr.h"
 #include "sds.h"
 #include "log.h"
+#include "klib/klist.h"
+
+// A R G S
+
+struct a_config {
+	int port;
+	char is_debug;
+};
+
+struct a_config a_get_config(int argc, char* argv[]) {
+	struct a_config aconf = {0};
+	aconf.port = 6969;
+	aconf.is_debug = 0;
+
+	static struct option long_options[] = {
+		{"help", no_argument, 0, 'h'},
+		{"port", required_argument, 0, 'p'},
+		{"info", no_argument, 0, 'I'},
+		{"debug", no_argument, 0, 'D'},
+		{"fatal", no_argument, 0, 'F'},
+		{0, 0, 0, 0} // NULL-terminator
+	};
+	
+	int opt;
+	errno = 0;
+	log_set_level(LOG_INFO);
+	while ((opt = getopt_long(argc, argv, "hp:IDF", long_options, NULL)) != -1) {
+		switch (opt) {
+			case 'h':
+				printf("Help:\n");
+				printf("--port, -p - specify running port for the server\n");
+				exit(0);
+				break;
+			case 'p':
+				char* endp;
+				aconf.port = strtol(optarg, &endp, 10);
+				if (errno || *endp != '\0') {
+					printf("--port argument is invalid (0-65535)\n");
+					exit(1);
+				}
+				break;
+			case 'I': log_set_level(LOG_INFO); break;
+			case 'D': aconf.is_debug = 1; log_set_level(LOG_DEBUG); break;
+			case 'F': log_set_level(LOG_FATAL); break;
+			case 'A': ; break;
+			default:
+				break;
+		}
+	}
+
+	return aconf;
+}
 
 // E V E N T S
 
@@ -39,8 +91,12 @@ struct ac_conn {
 	struct ac_conn* next;
 };
 
+struct a_config;
+
 struct ac_mgr {
+	char close_flag;
 	struct ac_conn* conns;
+	struct a_config* aconf;
 };
 
 void ac_send_all(struct mg_connection* c, char* buf, int len) {
@@ -124,6 +180,13 @@ void ac_user_close(struct mg_connection* c, struct mg_str data) {
 	}
 }
 
+void ac_server_restart(struct mg_connection* c, struct mg_str data) {
+	struct ac_mgr* acmgr = (struct ac_mgr*)c->mgr->userdata;
+	if (!acmgr->aconf->is_debug)
+		return;
+	acmgr->close_flag = 1;
+}
+
 // Game functions
 
 // EV: Low level handlers
@@ -163,12 +226,12 @@ void ev_handle_ws_msg(struct mg_connection* c, void* ev_data) {
 	//AC_ROUTE("M", ac_user_open)
 	AC_ROUTE("c_open", ac_user_open)
 	AC_ROUTE("c_close", ac_user_close)
+	AC_ROUTE("c_server_restart", ac_server_restart)
 }
 
 void ev_handle_ws_close(struct mg_connection* c, void* ev_data) {
-	//struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
-	//disconnect
-	// TODO: Add ac_user_close
+	struct mg_ws_message* wm = (struct mg_ws_message*)ev_data;
+	ac_user_close(c, (struct mg_str){0});
 }
 
 void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
@@ -185,54 +248,6 @@ void ev_handler(struct mg_connection* c, int ev, void* ev_data) {
 	}
 }
 
-// A R G S
-
-struct a_config { // App config
-	int port;
-};
-
-struct a_config a_get_config(int argc, char* argv[]) {
-	struct a_config aconf = {0};
-	aconf.port = 6969;
-
-	static struct option long_options[] = {
-		{"help", no_argument, 0, 'h'},
-		{"port", required_argument, 0, 'p'},
-		{"log-level-info", no_argument, 0, 'I'},
-		{"log-level-debug", no_argument, 0, 'D'},
-		{"log-level-fatal", no_argument, 0, 'F'},
-		{0, 0, 0, 0} // NULL-terminator
-	};
-	
-	int opt;
-	errno = 0;
-	log_set_level(LOG_INFO);
-	while ((opt = getopt_long(argc, argv, "hp:IDF", long_options, NULL)) != -1) {
-		switch (opt) {
-			case 'h':
-				printf("Help:\n");
-				printf("--port, -p - specify running port for the server\n");
-				exit(0);
-				break;
-			case 'p':
-				char* endp;
-				aconf.port = strtol(optarg, &endp, 10);
-				if (errno || *endp != '\0') {
-					printf("--port argument is invalid (0-65535)\n");
-					exit(1);
-				}
-				break;
-			case 'I': log_set_level(LOG_INFO); break;
-			case 'D': log_set_level(LOG_DEBUG); break;
-			case 'F': log_set_level(LOG_FATAL); break;
-			default:
-				break;
-		}
-	}
-
-	return aconf;
-}
-
 // M A I N
 
 void a_main(int argc, char* argv[]) {
@@ -241,15 +256,20 @@ void a_main(int argc, char* argv[]) {
 	char addr[32];
 	snprintf(addr, sizeof(addr), "http://0.0.0.0:%d", aconf.port);
 
-	log_info("INTERFACE: %s", addr);
-
-	struct mg_mgr mgr;
-	mg_mgr_init(&mgr);
-	struct ac_mgr acmgr = {0};
-	mgr.userdata = &acmgr;
-	mg_http_listen(&mgr, addr, ev_handler, NULL);
-	for (;;) {
-		mg_mgr_poll(&mgr, 1000);
+	while (1) {
+		log_info("INTERFACE: %s", addr);
+		struct mg_mgr mgr;
+		mg_mgr_init(&mgr);
+		struct ac_mgr acmgr = {0};
+		acmgr.close_flag = 0;
+		acmgr.conns = 0;
+		acmgr.aconf = &aconf;
+		mgr.userdata = &acmgr;
+		mg_http_listen(&mgr, addr, ev_handler, NULL);
+		while (!acmgr.close_flag) {
+			mg_mgr_poll(&mgr, 1000);
+		}
+		mg_mgr_free(&mgr);
 	}
 }
 
