@@ -1,3 +1,4 @@
 mafia
 tests
 *.o
+*.log
