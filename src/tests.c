@@ -93,11 +93,17 @@ void ws_restart(struct mg_mgr* mgr) {
 // T E S T S
 
 #define UT_ASSERT(cond_) \
-	if (DEBUG) { printf("  UT_ASSERT: %s\n", #cond_); } \
 	if (!(cond_)) { \
+		printf("  UT_ASSERT: %s\n", #cond_); \
 		return 0; \
 		if (DEBUG) exit(1); \
 	}
+
+//#define UT_STRCMP(str1_, str2_) \
+//	if (strcmp(str1_, str2_) != 0) { \
+//		printf("  UT_STRCMP: '%s' != '%s'"); \
+//		return 0; \
+//	}
 
 #define UT_DEFINE_CONN_DATA() \
 	struct mg_mgr mgr; \
@@ -117,15 +123,17 @@ char utf_conn_part1() {
 char utf_conn_part2() {
 	UT_DEFINE_CONN_DATA();
 	ws_connect(&mgr, &c[0]);
+	ws_connect(&mgr, &c[1]);
+	ws_connect(&mgr, &c[2]);
 	ws_send(c[0], "c_open|Coolguy");
 	UT_ASSERT(ws_expect(c[0], "c_open_ok"));
 	UT_ASSERT(ws_expect(c[0], "c_users|Coolguy"));
 	ws_send(c[1], "c_open|Lame!guy");
 	UT_ASSERT(ws_expect(c[1], "c_open_ok"));
-	UT_ASSERT(ws_expect(c[1], "c_users|Coolguy,Lame!guy"));
+	UT_ASSERT(ws_expect(c[1], "c_users|Lame!guy,Coolguy"));
 	ws_send(c[2], "c_open|Он русский");
 	UT_ASSERT(ws_expect(c[2], "c_open_ok"));
-	UT_ASSERT(ws_expect(c[2], "c_users|Coolguy,Lame!guy,Он русский"));
+	UT_ASSERT(ws_expect(c[2], "c_users|Он русский,Lame!guy,Coolguy"));
 	ws_restart(&mgr);
 	return 1;
 }

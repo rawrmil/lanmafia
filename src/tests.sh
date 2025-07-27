@@ -3,4 +3,4 @@
 make build
 ./mafia -D &
 make tests
-pkill ./mafia
+pkill mafia
