@@ -99,7 +99,7 @@ void ws_restart(struct mg_mgr* mgr) {
 
 #define UT_STRCMP(str1_, str2_) \
 	if (strcmp(str1_, str2_) != 0) { \
-		printf("  UT_STRCMP: '%s' != '%s'\n"); \
+		printf("  UT_STRCMP: '%s' != '%s'\n", str1_, str2_); \
 		return 0; \
 	}
 
