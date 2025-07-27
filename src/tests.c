@@ -103,37 +103,44 @@ void ws_restart(struct mg_mgr* mgr) {
 		return 0; \
 	}
 
-#define UT_DEFINE_CONN_DATA() \
+#define WS_EXPECT(c_, expstr_) \
+	do { \
+		sds str_ = ws_receive(c_); \
+		UT_STRCMP(str_, expstr_); \
+		sdsfree(str_); \
+	} while(0);
+
+#define WS_DEFINE_CONN_DATA() \
 	struct mg_mgr mgr; \
 	struct mg_connection* c[16] = {0}; \
 	mg_mgr_init(&mgr);
 
 char utf_conn_part1() {
 	sds str;
-	UT_DEFINE_CONN_DATA();
+	WS_DEFINE_CONN_DATA();
 	ws_connect(&mgr, &c[0]);
 	ws_send(c[0], "c_open|Someguy");
-	str = ws_receive(c[0]); UT_STRCMP(str, "c_open_ok!"); sdsfree(str);
-	str = ws_receive(c[0]); UT_STRCMP(str, "c_users|Someguy"); sdsfree(str);
+	WS_EXPECT(c[0], "c_open_ok");
+	WS_EXPECT(c[0], "c_users|Someguy");
 	ws_restart(&mgr);
 	return 1;
 }
 
 char utf_conn_part2() {
-	//UT_DEFINE_CONN_DATA();
-	//ws_connect(&mgr, &c[0]);
-	//ws_connect(&mgr, &c[1]);
-	//ws_connect(&mgr, &c[2]);
-	//ws_send(c[0], "c_open|Coolguy");
-	//UT_ASSERT(ws_expect(c[0], "c_open_ok"));
-	//UT_ASSERT(ws_expect(c[0], "c_users|Coolguy"));
-	//ws_send(c[1], "c_open|Lame!guy");
-	//UT_ASSERT(ws_expect(c[1], "c_open_ok"));
-	//UT_ASSERT(ws_expect(c[1], "c_users|Lame!guy,Coolguy"));
-	//ws_send(c[2], "c_open|Он русский");
-	//UT_ASSERT(ws_expect(c[2], "c_open_ok"));
-	//UT_ASSERT(ws_expect(c[2], "c_users|Он русский,Lame!guy,Coolguy"));
-	//ws_restart(&mgr);
+	WS_DEFINE_CONN_DATA();
+	ws_connect(&mgr, &c[0]);
+	ws_connect(&mgr, &c[1]);
+	ws_connect(&mgr, &c[2]);
+	ws_send(c[0], "c_open|Coolguy");
+	WS_EXPECT(c[0], "c_open_ok");
+	WS_EXPECT(c[0], "c_users|Coolguy");
+	ws_send(c[1], "c_open|Lame!guy");
+	WS_EXPECT(c[1], "c_open_ok");
+	WS_EXPECT(c[1], "c_users|Lame!guy,Coolguy");
+	ws_send(c[2], "c_open|Он русский");
+	WS_EXPECT(c[2], "c_open_ok");
+	WS_EXPECT(c[2], "c_users|Он русский,Lame!guy,Coolguy");
+	ws_restart(&mgr);
 	return 1;
 }
 
